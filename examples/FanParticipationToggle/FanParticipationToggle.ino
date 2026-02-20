@@ -35,10 +35,10 @@ const char *WIFI_PASS = "YOUR_WIFI_PASSWORD";
 // ------ Fast Connect Configuration ------
 // Configure multiple fans for demonstration
 SmartMiFanFastConnectEntry fastConnectFans[] = {
-  {"192.168.178.98", "412a2c36f14d0939238635f96f73d71c"},   // Fan 1: Valid
-  {"192.168.178.126", "1cc6f8c3e24292c78885de719e9d71dc"},  // Fan 2: Valid
-  {"192.168.178.130", "55a25a8b3453d510929a36794a8fb181"},  // Fan 3: Valid
-  {"192.168.178.140", "7877a0f13dc821d22fe2de5b0c9f6a0e"}   // Fan 4: Wrong IP -> Error 
+  {"192.168.1.100", "11111111111111111111111111111111"},   // Fan 1: Valid
+  {"192.168.1.101", "22222222222222222222222222222222"},  // Fan 2: Valid
+  {"192.168.1.104", "33333333333333333333333333333333"},  // Fan 3: Valid
+  {"192.168.1.105", "44444444444444444444444444444444"}   // Fan 4: Wrong IP -> Error 
 };
 const size_t FAST_CONNECT_FAN_COUNT = sizeof(fastConnectFans) / sizeof(fastConnectFans[0]);
 // ----------------------------------------

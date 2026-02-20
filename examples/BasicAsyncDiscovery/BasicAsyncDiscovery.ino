@@ -33,7 +33,7 @@ const char *WIFI_PASS = "YOUR_WIFI_PASSWORD";
 // ------ Fan Tokens ------
 // Add your fan tokens here (32 hex characters each)
 const char *TOKENS[] = {
-  "7877a0f13dc821d22fe2de5b0c9f6a0e"
+  "44444444444444444444444444444444"
   // Add more tokens as needed
 };
 const size_t TOKEN_COUNT = sizeof(TOKENS) / sizeof(TOKENS[0]);

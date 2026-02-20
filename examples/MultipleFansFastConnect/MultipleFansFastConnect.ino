@@ -44,12 +44,12 @@ const char *WIFI_PASS = "YOUR_WIFI_PASSWORD";
 // When model is provided, queryInfo() is skipped → faster & more stable connection!
 // Common models: "zhimi.fan.za5" (Standing Fan 3), "zhimi.fan.za4" (Standing Fan 2S)
 SmartMiFanFastConnectEntry fastConnectFans[] = {
-  //{"192.168.178.98", "412a2c36f14d0939238635f96f73d71c"},                    // Model queried
-  //{"192.168.178.126", "1cc6f8c3e24292c78885de719e9d71dc","dmaker.fan.p33"},    // Model provided (faster!)
-  //{"192.168.178.130", "55a25a8b3453d510929a36794a8fb181", "xiaomi.fan.p76"}  
-  {"192.168.178.126", "1cc6f8c3e24292c78885de719e9d71dc"},    // Model provided (faster!)
-  {"192.168.178.130", "55a25a8b3453d510929a36794a8fb181", "xiaomi.fan.p76"}     // Model provided (faster!)            
-  //{"192.168.178.125", "7877a0f13dc821d22fe2de5b0c9f6a0e"}  
+  //{"192.168.1.100", "11111111111111111111111111111111"},                    // Model queried
+  //{"192.168.1.101", "22222222222222222222222222222222","dmaker.fan.p33"},    // Model provided (faster!)
+  //{"192.168.1.104", "33333333333333333333333333333333", "xiaomi.fan.p76"}  
+  {"192.168.1.101", "22222222222222222222222222222222"},    // Model provided (faster!)
+  {"192.168.1.104", "33333333333333333333333333333333", "xiaomi.fan.p76"}     // Model provided (faster!)            
+  //{"192.168.1.107", "44444444444444444444444444444444"}  
 };
 const size_t FAST_CONNECT_FAN_COUNT = sizeof(fastConnectFans) / sizeof(fastConnectFans[0]);
 // ----------------------------------------

@@ -48,10 +48,10 @@ const char *WIFI_PASS = "YOUR_WIFI_PASSWORD";
 // Define your fans directly by IP address and token
 // For demonstration, we'll use some example IPs - replace with your actual fans
 SmartMiFanFastConnectEntry fastConnectFans[] = {
-  {"192.168.178.98", "412a2c36f14d0939238635f96f73d71c"},           // Fan 1
-  {"192.168.178.126", "1cc6f8c3e24292c78885de719e9d71dc"},          // Fan 2
-  {"192.168.178.255", "00000000000000000000000000000000"},          // Fan 3: Invalid IP (will timeout)
-  {"192.168.178.130", "wrongtoken1234567890123456789012"}           // Fan 4: Wrong token (will fail decrypt)
+  {"192.168.1.100", "11111111111111111111111111111111"},           // Fan 1
+  {"192.168.1.101", "22222222222222222222222222222222"},          // Fan 2
+  {"192.168.1.255", "00000000000000000000000000000000"},          // Fan 3: Invalid IP (will timeout)
+  {"192.168.1.104", "wrongtoken1234567890123456789012"}           // Fan 4: Wrong token (will fail decrypt)
 };
 const size_t FAST_CONNECT_FAN_COUNT = sizeof(fastConnectFans) / sizeof(fastConnectFans[0]);
 // ----------------------------------------

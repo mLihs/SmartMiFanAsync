@@ -45,8 +45,8 @@ const char *WIFI_PASS = "YOUR_WIFI_PASSWORD";
 // ------ Fan Tokens ------
 // Add tokens for all your fans
 const char *TOKENS[] = {
-  "1cc6f8c3e24292c78885de719e9d71dc",
-  "55a25a8b3453d510929a36794a8fb181"
+  "22222222222222222222222222222222",
+  "33333333333333333333333333333333"
   // Add more tokens as needed
 };
 

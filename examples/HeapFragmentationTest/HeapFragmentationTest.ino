@@ -43,8 +43,8 @@ const char *WIFI_PASS = "YOUR_WIFI_PASSWORD";
 // Some fans may have wrong IPs or be unreachable - Smart Connect will
 // automatically use Discovery for any fans that fail Fast Connect
 SmartMiFanFastConnectEntry fastConnectFans[] = {
-  {"192.168.178.130", "55a25a8b3453d510929a36794a8fb181", "xiaomi.fan.p76"},
-  {"192.168.178.121", "1cc6f8c3e24292c78885de719e9d71dc"}, // Model: dmaker.fan.p33
+  {"192.168.1.104", "33333333333333333333333333333333", "xiaomi.fan.p76"},
+  {"192.168.1.106", "22222222222222222222222222222222"}, // Model: dmaker.fan.p33
   // Add more fans as needed
 };
 

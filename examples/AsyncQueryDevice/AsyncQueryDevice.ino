@@ -31,8 +31,8 @@ const char *WIFI_PASS = "YOUR_WIFI_PASSWORD";
 // --------------------------------
 
 // ------ Fan Configuration ------
-const char *FAN_IP = "192.168.178.98";  // Replace with your fan's IP address
-const char *TOKEN_HEX = "412a2c36f14d0939238635f96f73d71c"; // 32 hex characters
+const char *FAN_IP = "192.168.1.100";  // Replace with your fan's IP address
+const char *TOKEN_HEX = "11111111111111111111111111111111"; // 32 hex characters
 // --------------------------------
 
 WiFiUDP fanUdp;

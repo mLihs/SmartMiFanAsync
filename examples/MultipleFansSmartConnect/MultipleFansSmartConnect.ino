@@ -37,15 +37,15 @@ const char *WIFI_PASS = "YOUR_WIFI_PASSWORD";
 // automatically use Discovery for any fans that fail Fast Connect
 /*
 SmartMiFanFastConnectEntry fastConnectFans[] = {
-  {"192.168.178.98", "412a2c36f14d0939238635f96f73d71c"},
-  {"192.168.178.126", "1cc6f8c3e24292c78885de719e9d71dc"},  // May fail, will use Discovery
-  {"192.168.178.131", "55a25a8b3453d510929a36794a8fb181"},
-  {"192.168.178.122", "7877a0f13dc821d22fe2de5b0c9f6a0e"}
+  {"192.168.1.100", "11111111111111111111111111111111"},
+  {"192.168.1.101", "22222222222222222222222222222222"},  // May fail, will use Discovery
+  {"192.168.1.102", "33333333333333333333333333333333"},
+  {"192.168.1.103", "44444444444444444444444444444444"}
 };*/
 
 SmartMiFanFastConnectEntry fastConnectFans[] = {
-  {"192.168.178.130", "55a25a8b3453d510929a36794a8fb181"}, // Model: dmaker.fan.p33
-  {"192.168.178.121", "1cc6f8c3e24292c78885de719e9d71dc"} // not Existing IP and Token
+  {"192.168.1.104", "33333333333333333333333333333333"}, // Model: dmaker.fan.p33
+  {"192.168.1.106", "22222222222222222222222222222222"} // not Existing IP and Token
 };
 
 const size_t FAST_CONNECT_FAN_COUNT = sizeof(fastConnectFans) / sizeof(fastConnectFans[0]);
