@@ -5,6 +5,27 @@ All notable changes to the SmartMiFanAsync library will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-10-31
+
+### Changed
+- **Non-blocking manager:** one UDP socket and one session per slot. `update()` drives connect, discovery, and commands. No blocking waits.
+- **Public API:** namespace `SmartMiFan`. Slot index is chosen by the application. Group commands return a correlation `seq`.
+- **Events:** `EventCallback` reports READY/ERROR/INFO, CMD_DONE, GROUP_DONE, CONNECT_DONE, DISCOVERY_DONE, CANCELLED.
+
+### Removed
+- Every `SmartMiFanAsync_*` free function, `SmartMiFanAsyncClient`, Fast/Smart Connect classes, and `SystemState`.
+
+---
+
+## [1.8.4] - 2026-10-31
+
+### Fixed
+- **Orchestrated command coalescing:** Power and speed now have separate 100 ms cooldowns, so an immediate speed command is no longer dropped after a power command.
+- **Return semantics:** Coalesced calls now return `false` instead of reporting success without sending.
+- **Debug configuration:** `FAN_DEBUG_GEN_DISABLE` can disable general logging while logging remains enabled by default.
+
+---
+
 ## [1.8.3] - 2026-02-20
 
 ### Changed

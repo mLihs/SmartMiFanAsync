@@ -1,257 +1,270 @@
-// =============================================================================
-// SmartMiFanAsync - Internal Header (Phase 5: File Split)
-// =============================================================================
-// This header contains internal types, constants, and forward declarations
-// shared between all implementation modules. NOT part of the public API.
-// =============================================================================
-
 #pragma once
 
-#include "../SmartMiFanAsync.h"
-
-#include <WiFi.h>
+#include <Arduino.h>
+#include <IPAddress.h>
 #include <WiFiUdp.h>
 #include <string.h>
+#include <stdint.h>
 
-#include "mbedtls/aes.h"
-#include "mbedtls/md5.h"
+#include "SmartMiFanAsync.h"
+#include "MiioCodec.h"
+
+#if defined(ARDUINO_ARCH_ESP32)
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/portmacro.h"
+#endif
 
 namespace SmartMiFanInternal {
 
-// =========================
-// Protocol Constants
-// =========================
+constexpr uint8_t kMaxFans = SMARTMIFAN_MAX_FANS;
+constexpr uint8_t kMaxCandidates = SMARTMIFAN_MAX_CANDIDATES;
+constexpr uint16_t kRxBuffer = SMARTMIFAN_RX_BUFFER;
+constexpr uint16_t kTxBuffer = 320;
+constexpr uint8_t kEventDepth = static_cast<uint8_t>(8 * SMARTMIFAN_MAX_FANS + 16);
+constexpr uint16_t kHelloTimeoutMs = 500;
+constexpr uint8_t kHelloRetries = 3;
+constexpr uint16_t kReplyTimeoutMs = 1500;
+constexpr uint16_t kGroupTimeoutMs = 4000;
+constexpr uint16_t kHelloIntervalMs = 500;
+constexpr uint16_t kFastConnectMs = 3500;
 constexpr uint16_t kMiioPort = 54321;
-constexpr size_t kMaxSmartMiFans = 16;
-constexpr size_t kMaxFastConnectFans = 4;
+constexpr uint8_t kPowerSiid = 2;
+constexpr uint8_t kPowerPiid = 1;
 
-// =========================
-// Internal Structures
-// =========================
+enum class SessionState : uint8_t { EMPTY, UNKNOWN, HANDSHAKING, READY, BUSY, ERROR };
+enum class ReqKind : uint8_t { NONE, HELLO, INFO, SET_PROPERTY };
+enum class ConnectPhase : uint8_t { IDLE, FAST_CONNECT, DISCOVERY, DONE };
 
-#pragma pack(push, 1)
-struct MiioHeader {
-  uint16_t magic;
-  uint16_t length;
-  uint32_t unknown;
-  uint8_t device_id[4];
-  uint32_t ts_be;
-  uint8_t checksum[16];
+struct DeferredCmd {
+  CmdKind kind = CmdKind::NONE;
+  uint8_t value = 0;
+  bool isGroup = false;
+  bool retried = false;
 };
-#pragma pack(pop)
+
+struct MiioSession {
+  IPAddress ip;
+  IPAddress ipBeforeProbe;
+  uint8_t token[16]{};
+  uint8_t key[16]{};
+  uint8_t iv[16]{};
+  FanModelType modelType = FanModelType::UNKNOWN;
+  uint8_t deviceId[4]{};
+  uint32_t deviceTs = 0;
+  uint32_t lastHandshakeMs = 0;
+  MiioErr errorBeforeProbe = MiioErr::OK;
+  ReqKind reqKind = ReqKind::NONE;
+  CmdKind reqCmd = CmdKind::NONE;
+  uint32_t reqId = 0;
+  uint32_t reqSentMs = 0;
+  uint16_t reqTimeoutMs = 0;
+  uint8_t helloRetries = 0;
+  DeferredCmd deferred[3];
+  SessionState state = SessionState::EMPTY;
+  MiioErr lastError = MiioErr::OK;
+  bool userEnabled = false;
+  bool softActive = false;
+  int8_t probingCandidate = -1;
+};
+
+struct FanSlot {
+  MiioSession s;
+  char model[24]{};
+  char fw_ver[16]{};
+  char hw_ver[16]{};
+  char token[33]{};
+};
+
+struct GroupSlot {
+  bool active = false;
+  CmdKind kind = CmdKind::NONE;
+  uint8_t value = 0;
+  Scope scope = Scope::ALL;
+  uint8_t seq = 0;
+  uint32_t startMs = 0;
+  FanMask pendingMask = 0;
+  FanMask okMask = 0;
+  FanMask failMask = 0;
+  bool hasNext = false;
+  uint8_t nextValue = 0;
+  Scope nextScope = Scope::ALL;
+  uint8_t nextSeq = 0;
+};
 
 struct DiscoveryCandidate {
   IPAddress ip;
-  uint8_t deviceId[4];
-  uint32_t timestamp;
+  uint8_t deviceId[4]{};
+  uint32_t ts = 0;
+  FanMask triedMask = 0;
+  bool done = false;
 };
 
-struct FastConnectConfigEntry {
-  IPAddress ip;
-  char token[33];  // Hex token string (32 chars + null terminator)
-  char model[24];  // Optional: Fan model (skips queryInfo if set)
-  bool enabled;    // Entry enabled/disabled
+struct DiscoveryState {
+  bool active = false;
+  bool collecting = false;
+  uint32_t startMs = 0;
+  uint32_t durationMs = 0;
+  uint32_t lastHelloMs = 0;
+  uint32_t deadlineMs = 0;
+  FanMask slotMask = 0;
+  FanMask startMask = 0;
+  FanMask abortMask = 0;
+  DiscoveryCandidate candidates[kMaxCandidates];
+  uint8_t candidateCount = 0;
 };
 
-// Smart Connect Context
-struct SmartConnectContext {
-  SmartConnectState state;
-  WiFiUDP* udp;
-  unsigned long discoveryMs;
-  const char* failedTokens[kMaxFastConnectFans];
-  size_t failedTokenCount;
-  bool fastConnectValidated;
-  
-  void reset() {
-    state = SmartConnectState::IDLE;
-    udp = nullptr;
-    discoveryMs = 0;
-    failedTokenCount = 0;
-    fastConnectValidated = false;
-    memset(failedTokens, 0, sizeof(failedTokens));
+struct MiioTransport {
+  WiFiUDP* udp = nullptr;
+  bool bound = false;
+  uint8_t rx[kRxBuffer]{};
+  uint8_t tx[kTxBuffer]{};
+  uint32_t nextMsgId = 1;
+};
+
+struct Manager {
+  MiioTransport transport;
+  FanSlot fans[kMaxFans];
+  FanMask usedMask = 0;
+  uint8_t nextGroupSeq = 1;
+  DiscoveryState discovery;
+  ConnectPhase connectPhase = ConnectPhase::IDLE;
+  uint32_t connectDeadlineMs = 0;
+  uint32_t connectDiscoveryMs = 3000;
+  FanMask infoSentMask = 0;
+  GroupSlot power;
+  GroupSlot speed;
+  GroupSlot handshakeGroup;
+  uint32_t lastPowerCmdMs = 0;
+  uint32_t lastSpeedCmdMs = 0;
+  uint32_t handshakeTtlMs = SMARTMIFAN_HANDSHAKE_TTL_S * 1000UL;
+  EventInfo eventQueue[kEventDepth];
+  uint8_t eventCount = 0;
+  uint32_t eventsDropped = 0;
+  EventCallback onEvent = nullptr;
+  bool inUpdate = false;
+#if defined(ARDUINO_ARCH_ESP32)
+  portMUX_TYPE infoMux = portMUX_INITIALIZER_UNLOCKED;
+  TaskHandle_t updateTask = nullptr;
+#endif
+};
+
+inline bool elapsedAtLeast(uint32_t now, uint32_t start, uint32_t dur) {
+  return static_cast<uint32_t>(now - start) >= dur;
+}
+
+inline bool deviceKnown(const uint8_t id[4]) {
+  return (id[0] | id[1] | id[2] | id[3]) != 0;
+}
+
+inline FanMask bitOf(uint8_t i) {
+  return static_cast<FanMask>(1u << i);
+}
+
+inline uint8_t idx(CmdKind kind) {
+  switch (kind) {
+    case CmdKind::POWER: return 0;
+    case CmdKind::SPEED: return 1;
+    case CmdKind::HANDSHAKE: return 2;
+    default: return 0;
   }
-};
-
-// Async Discovery Context (uses shared buffers for crypto)
-struct DiscoveryContext {
-  DiscoveryState state;
-  unsigned long startTime;
-  unsigned long discoveryMs;
-  const char* const* tokens;
-  size_t tokenCount;
-  size_t currentTokenIndex;
-  size_t currentCandidateIndex;
-  DiscoveryCandidate candidates[kMaxSmartMiFans];
-  size_t candidateCount;
-  WiFiUDP* udp;
-  unsigned long lastHelloSend;
-  bool helloSent;
-  
-  // For async miio.info query
-  DiscoveryCandidate currentQueryCandidate;
-  const char* currentQueryToken;
-  size_t queryCipherLen;
-  MiioHeader queryHeader;
-  unsigned long queryStartTime;
-  bool querySent;
-  
-  // Accessors to shared buffers (defined in Core module)
-  uint8_t* queryKey();
-  uint8_t* queryIv();
-  uint8_t* queryCipher();
-  
-  void reset();
-};
-
-// Async Query Context (uses shared buffers for crypto)
-struct QueryContext {
-  QueryState state;
-  WiFiUDP* udp;
-  IPAddress targetIp;
-  const char* tokenHex;
-  DiscoveryCandidate candidate;
-  unsigned long startTime;
-  bool helloSent;
-  unsigned long lastHelloSend;
-  
-  // For async miio.info query
-  size_t queryCipherLen;
-  MiioHeader queryHeader;
-  unsigned long queryStartTime;
-  bool querySent;
-  
-  // Accessors to shared buffers
-  uint8_t* queryKey();
-  uint8_t* queryIv();
-  uint8_t* queryCipher();
-  
-  void reset();
-};
-
-// Phase 3: Single-Pass miIO.info Parser result
-struct MiioInfoFields {
-  char model[24];
-  char fw_ver[16];
-  char hw_ver[16];
-  uint32_t did;
-  bool modelFound;
-};
-
-// Query result enum (internal)
-enum class QueryInfoResult {
-  IN_PROGRESS,
-  SUCCESS,
-  FAILED
-};
-
-// Shared parameters for miIO query execution (Phase 1)
-struct MiioQueryParams {
-  WiFiUDP* udp;
-  const DiscoveryCandidate* candidate;
-  const char* tokenHex;
-  uint8_t* queryKey;
-  uint8_t* queryIv;
-  uint8_t* queryCipher;
-  size_t* queryCipherLen;
-  MiioHeader* queryHeader;
-  unsigned long* queryStartTime;
-  bool* querySent;
-};
-
-// =========================
-// Global State (extern declarations)
-// =========================
-extern SmartMiFanDiscoveredDevice g_discoveredFans[kMaxSmartMiFans];
-extern size_t g_discoveredFanCount;
-extern WiFiUDP* g_udpContext;
-extern FanErrorCallback g_errorCallback;
-
-extern FastConnectConfigEntry g_fastConnectConfig[kMaxFastConnectFans];
-extern size_t g_fastConnectConfigCount;
-extern bool g_useFastConnect;
-extern FastConnectValidationCallback g_fastConnectCallback;
-
-extern SmartConnectContext g_smartConnectContext;
-extern FastConnectValidationCallback g_originalFastConnectCallback;
-
-extern DiscoveryContext g_discoveryContext;
-extern QueryContext g_queryContext;
-
-// Shared static buffers
-extern uint8_t g_sharedUdpBuffer[512];
-extern uint8_t g_sharedPlainBuffer[512];
-extern uint8_t g_sharedCipherBuffer[256];
-extern uint8_t g_sharedQueryKey[16];
-extern uint8_t g_sharedQueryIv[16];
-
-extern uint32_t g_msgId;
-
-// Supported models list
-extern const char* kSupportedModels[];
-
-// =========================
-// Core Utility Functions
-// =========================
-
-// Byte order conversion
-inline uint16_t to_be16(uint16_t v) {
-  return (v >> 8) | (v << 8);
 }
 
-inline uint32_t to_be32(uint32_t v) {
-  return ((v >> 24) & 0xFF) | ((v >> 8) & 0xFF00) | 
-         ((v << 8) & 0xFF0000) | ((v << 24) & 0xFF000000);
+inline bool tokenEqHex(const char* a, const char* b) {
+  if (!a || !b) return false;
+  for (int i = 0; i < 32; ++i) {
+    char ca = a[i];
+    char cb = b[i];
+    if (ca >= 'A' && ca <= 'F') ca = static_cast<char>(ca + 32);
+    if (cb >= 'A' && cb <= 'F') cb = static_cast<char>(cb + 32);
+    if (ca != cb) return false;
+  }
+  return true;
 }
 
-// MD5 hash
-void md5(const uint8_t* in, size_t len, uint8_t out[16]);
+inline bool deriveReady(const MiioSession& s) {
+  if (s.state == SessionState::READY || s.state == SessionState::BUSY) return true;
+  return s.state == SessionState::HANDSHAKING && s.lastError == MiioErr::OK && deviceKnown(s.deviceId);
+}
 
-// UDP helpers - safe packet discard (avoids flush() which can discard multiple packets)
-void discardUdpPacket(WiFiUDP* udp);
+inline FanParticipationState deriveParticipation(const MiioSession& s) {
+  if (s.state == SessionState::EMPTY) return FanParticipationState::INACTIVE;
+  const bool ready = deriveReady(s);
+  if (s.userEnabled && (s.lastError == MiioErr::OK || s.softActive)) {
+    return FanParticipationState::ACTIVE;
+  }
+  if (s.lastError != MiioErr::OK && !ready) return FanParticipationState::ERROR;
+  return FanParticipationState::INACTIVE;
+}
 
-// Crypto helpers
-bool hexToBytes16Helper(const char* hex, uint8_t out16[16]);
-void computeKeyIv(const uint8_t token[16], uint8_t key[16], uint8_t iv[16]);
+inline FanModelType modelStringToType(const char* model) {
+  if (!model || !model[0]) return FanModelType::UNKNOWN;
+  const size_t len = strlen(model);
+  if (len < 3) return FanModelType::UNKNOWN;
+  const char* s = model + len - 3;
+  const uint32_t suffix = (static_cast<uint32_t>(s[0]) << 16) |
+                          (static_cast<uint32_t>(s[1]) << 8) |
+                          static_cast<uint32_t>(s[2]);
+  switch (suffix) {
+    case ('z' << 16) | ('a' << 8) | '5': return FanModelType::ZHIMI_FAN_ZA5;
+    case ('z' << 16) | ('a' << 8) | '4':
+    case ('z' << 16) | ('a' << 8) | '3': return FanModelType::ZHIMI_FAN_ZA4;
+    case ('.' << 16) | ('v' << 8) | '3':
+    case ('.' << 16) | ('v' << 8) | '2': return FanModelType::ZHIMI_FAN_V3;
+    case ('.' << 16) | ('1' << 8) | 'c': return FanModelType::DMAKER_FAN_1C;
+    case ('.' << 16) | ('p' << 8) | '5': return FanModelType::DMAKER_FAN_P5;
+    case ('.' << 16) | ('p' << 8) | '8':
+    case ('.' << 16) | ('p' << 8) | '9': return FanModelType::DMAKER_FAN_P9;
+    case ('p' << 16) | ('1' << 8) | '0':
+    case ('p' << 16) | ('1' << 8) | '8': return FanModelType::DMAKER_FAN_P10;
+    case ('p' << 16) | ('1' << 8) | '1':
+    case ('p' << 16) | ('1' << 8) | '5':
+    case ('p' << 16) | ('3' << 8) | '0':
+    case ('p' << 16) | ('3' << 8) | '3': return FanModelType::DMAKER_FAN_P11;
+    case ('p' << 16) | ('7' << 8) | '6': return FanModelType::XIAOMI_FAN_P76;
+    case ('2' << 16) | ('2' << 8) | '0': return FanModelType::DMAKER_FAN_P11;
+    default: return FanModelType::UNKNOWN;
+  }
+}
 
-// Model/Fan helpers
-bool isSupportedModel(const char* model);
-FanModelType modelStringToType(const char* model);
-void getSpeedParamsByType(FanModelType type, int& siid, int& piid, bool& useFanLevel);
-bool getSpeedParams(const char* model, int& siid, int& piid, bool& useFanLevel);
-bool fanAlreadyStored(uint32_t did, const IPAddress& ip);
+inline bool isSupportedModel(const char* model) {
+  return modelStringToType(model) != FanModelType::UNKNOWN;
+}
 
-// JSON parsing
-size_t pkcs7Unpad(uint8_t* buffer, size_t len);
-bool jsonExtractString(const char* json, const char* key, char* out, size_t outLen);
-uint32_t jsonExtractUint(const char* json, const char* key);
-uint32_t extractDidFromJson(const char* json, const uint8_t deviceId[4]);
-bool parseMiioInfoSinglePass(const char* json, MiioInfoFields& out);
-
-// Fan management
-void cacheFanCrypto(SmartMiFanDiscoveredDevice& fan);
-void appendDiscoveredFan(const SmartMiFanDiscoveredDevice& fan);
-bool prepareFanContext(const SmartMiFanDiscoveredDevice& fan);
-bool prepareFanContextCached(const SmartMiFanDiscoveredDevice& fan);
-
-// Error handling
-void emitErrorCallback(uint8_t fanIndex, const IPAddress& ip, FanOp operation, 
-                       MiioErr error, uint32_t elapsedMs, bool handshakeInvalidated);
-int findFanIndexByIp(const IPAddress& ip);
-
-// Discovery helpers
-bool storeHelloCandidate(const IPAddress& ip, const uint8_t* buffer, size_t len, 
-                         DiscoveryCandidate& candidate);
-bool candidateExists(const DiscoveryCandidate* candidates, size_t count, const IPAddress& ip);
-
-// Query system (Phase 1 consolidated)
-bool sendMiioInfoQuery(MiioQueryParams& p);
-QueryInfoResult processMiioResponse(MiioQueryParams& p, bool checkSupportedModel = true);
-
-// Discovery/Query async helpers
-QueryInfoResult attemptMiioInfoAsync(DiscoveryContext& ctx);
-QueryInfoResult attemptMiioInfoAsync(QueryContext& ctx);
+inline void getSpeedParamsByType(FanModelType type, int& siid, int& piid, bool& useFanLevel) {
+  useFanLevel = false;
+  switch (type) {
+    case FanModelType::DMAKER_FAN_1C:
+      siid = 2;
+      piid = 2;
+      useFanLevel = true;
+      return;
+    case FanModelType::DMAKER_FAN_P9:
+      siid = 2;
+      piid = 11;
+      return;
+    case FanModelType::DMAKER_FAN_P10:
+      siid = 2;
+      piid = 10;
+      return;
+    case FanModelType::DMAKER_FAN_P11:
+    case FanModelType::DMAKER_FAN_P5:
+      siid = 2;
+      piid = 6;
+      return;
+    case FanModelType::XIAOMI_FAN_P76:
+      siid = 2;
+      piid = 5;
+      return;
+    case FanModelType::ZHIMI_FAN_ZA5:
+    case FanModelType::ZHIMI_FAN_ZA4:
+    case FanModelType::ZHIMI_FAN_V3:
+    case FanModelType::UNKNOWN:
+    default:
+      siid = 6;
+      piid = 8;
+      return;
+  }
+}
 
 }  // namespace SmartMiFanInternal
-
-// Bring commonly used items into scope for implementation files
-using namespace SmartMiFanInternal;

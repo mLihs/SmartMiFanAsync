@@ -353,6 +353,8 @@ Enable debug logging to diagnose issues:
 #include <SmartMiFanAsync.h>
 ```
 
+General logging is enabled by default. Define `FAN_DEBUG_GEN_DISABLE` before including the library (or as a build flag) to disable it; this setting takes precedence over `FAN_DEBUG_GEN`.
+
 **Log Categories:**
 - **GEN**: General operations (discovery start/stop, errors)
 - **HOT**: Hot path operations (frequent calls in main loop)

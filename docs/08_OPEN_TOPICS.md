@@ -188,14 +188,14 @@ Add functions to read device properties (not just set them).
 
 **Question**: Should command coalescing be configurable or more sophisticated?
 
-**Current Behavior**: Fixed rate limit (max 1 command per second) for orchestrated functions
+**Current Behavior**: Fixed, independent rate limits for orchestrated power and speed commands (at most one command of each type per 100 ms). A coalesced call sends nothing and returns `false`.
 
 **Options**:
-1. Keep as-is (fixed rate limit)
+1. Keep as-is (fixed per-command-type rate limit)
 2. Make rate limit configurable
 3. Add more sophisticated coalescing (e.g., batch commands, priority queue)
 
-**Status**: Currently option 1 (fixed rate limit)
+**Status**: Currently option 1 (fixed per-command-type rate limit)
 
 ---
 

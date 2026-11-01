@@ -12,7 +12,8 @@ using namespace SmartMiFanInternal;
 // Command Coalescing State
 // =========================
 namespace {
-  unsigned long g_lastCommandTime = 0;
+  unsigned long g_lastPowerCommandMs = 0;
+  unsigned long g_lastSpeedCommandMs = 0;
   constexpr unsigned long kCommandCooldownMs = 100;  // Minimum time between orchestrated commands
 }
 
@@ -88,8 +89,9 @@ void SmartMiFanAsync_prepareForSleep(bool closeUdp, bool invalidateHandshake) {
     SmartMiFanAsync.invalidateHandshake();
   }
   
-  // Reset coalescing timer
-  g_lastCommandTime = 0;
+  // Reset coalescing timers
+  g_lastPowerCommandMs = 0;
+  g_lastSpeedCommandMs = 0;
 }
 
 void SmartMiFanAsync_softWakeUp() {
@@ -178,10 +180,10 @@ bool SmartMiFanAsync_setPowerAllOrchestrated(bool on) {
   
   // Command coalescing - skip if called too frequently
   unsigned long now = millis();
-  if (g_lastCommandTime > 0 && (now - g_lastCommandTime) < kCommandCooldownMs) {
-    return true;  // Silently succeed (command coalesced)
+  if (g_lastPowerCommandMs > 0 && (now - g_lastPowerCommandMs) < kCommandCooldownMs) {
+    return false;  // No command sent
   }
-  g_lastCommandTime = now;
+  g_lastPowerCommandMs = now;
   
   bool anySuccess = false;
   
@@ -218,10 +220,10 @@ bool SmartMiFanAsync_setSpeedAllOrchestrated(uint8_t percent) {
   
   // Command coalescing - skip if called too frequently
   unsigned long now = millis();
-  if (g_lastCommandTime > 0 && (now - g_lastCommandTime) < kCommandCooldownMs) {
-    return true;  // Silently succeed (command coalesced)
+  if (g_lastSpeedCommandMs > 0 && (now - g_lastSpeedCommandMs) < kCommandCooldownMs) {
+    return false;  // No command sent
   }
-  g_lastCommandTime = now;
+  g_lastSpeedCommandMs = now;
   
   bool anySuccess = false;
   

@@ -2,9 +2,11 @@
 
 #include <SmartMiFanAsync.h>
 
-// ------ Fast Connect Configuration ------
-extern SmartMiFanFastConnectEntry fastConnectFans[];
-extern const size_t FAST_CONNECT_FAN_COUNT;
-// ----------------------------------------
+struct FanEntry {
+  const char *ip;
+  const char *token;
+  const char *model;
+};
 
-
+extern FanEntry fans[];
+extern const uint8_t FAN_COUNT;

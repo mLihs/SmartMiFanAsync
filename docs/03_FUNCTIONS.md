@@ -313,16 +313,18 @@ bool SmartMiFanAsync_handshakeAllOrchestrated();
 bool SmartMiFanAsync_setPowerAllOrchestrated(bool on);
 ```
 - Only sends commands to ACTIVE fans
-- Command coalescing: max 1 command per second
-- Returns `true` if all ACTIVE fan operations succeeded
+- Power commands are limited to one per 100 ms, independently of speed commands
+- A coalesced call sends nothing and returns `false`
+- Returns `true` if at least one ACTIVE fan operation succeeded
 
 **Set Speed All Orchestrated:**
 ```cpp
 bool SmartMiFanAsync_setSpeedAllOrchestrated(uint8_t percent);
 ```
 - Only sends commands to ACTIVE fans
-- Command coalescing: max 1 command per second
-- Returns `true` if all ACTIVE fan operations succeeded
+- Speed commands are limited to one per 100 ms, independently of power commands
+- A coalesced call sends nothing and returns `false`
+- Returns `true` if at least one ACTIVE fan operation succeeded
 
 ---
 
