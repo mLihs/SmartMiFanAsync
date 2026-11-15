@@ -86,7 +86,7 @@ Add support for additional fan models as they become available.
 
 **Priority**: Low
 
-**Current Models**: 17 supported models
+**Current Models**: 19 supported models
 
 **Process**:
 1. Test with actual device

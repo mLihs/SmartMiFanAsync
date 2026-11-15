@@ -5,6 +5,11 @@ All notable changes to the SmartMiFanAsync library will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-11-15
+
+### Added
+- **xiaomi.fan.p70** (Smart Desktop Air Circulation Fan) and **xiaomi.fan.p85** (Smart Standing Fan Pro Slim). Percentage speed uses siid 2 / piid 5 for p70 and siid 11 / piid 6 for p85.
+
 ## [2.0.0] - 2026-10-31
 
 ### Changed

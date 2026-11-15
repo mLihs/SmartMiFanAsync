@@ -221,7 +221,9 @@ inline FanModelType modelStringToType(const char* model) {
     case ('p' << 16) | ('1' << 8) | '5':
     case ('p' << 16) | ('3' << 8) | '0':
     case ('p' << 16) | ('3' << 8) | '3': return FanModelType::DMAKER_FAN_P11;
+    case ('p' << 16) | ('7' << 8) | '0':
     case ('p' << 16) | ('7' << 8) | '6': return FanModelType::XIAOMI_FAN_P76;
+    case ('p' << 16) | ('8' << 8) | '5': return FanModelType::XIAOMI_FAN_P85;
     case ('2' << 16) | ('2' << 8) | '0': return FanModelType::DMAKER_FAN_P11;
     default: return FanModelType::UNKNOWN;
   }
@@ -255,6 +257,10 @@ inline void getSpeedParamsByType(FanModelType type, int& siid, int& piid, bool& 
     case FanModelType::XIAOMI_FAN_P76:
       siid = 2;
       piid = 5;
+      return;
+    case FanModelType::XIAOMI_FAN_P85:
+      siid = 11;
+      piid = 6;
       return;
     case FanModelType::ZHIMI_FAN_ZA5:
     case FanModelType::ZHIMI_FAN_ZA4:

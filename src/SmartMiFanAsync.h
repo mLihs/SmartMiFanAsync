@@ -89,7 +89,8 @@ enum class FanModelType : uint8_t {
   DMAKER_FAN_P9,
   DMAKER_FAN_P10,
   DMAKER_FAN_P11,
-  XIAOMI_FAN_P76
+  XIAOMI_FAN_P76,
+  XIAOMI_FAN_P85
 };
 
 enum class Scope : uint8_t {

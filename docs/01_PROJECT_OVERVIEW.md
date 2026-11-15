@@ -34,7 +34,9 @@ SmartMiFanAsync is an **asynchronous (non-blocking) Arduino library** for discov
 - **zhimi.fan.za3** - Smartmi Standing Fan 2
 
 ### Xiaomi Fans
+- **xiaomi.fan.p70** - Smart Desktop Air Circulation Fan
 - **xiaomi.fan.p76** - Xiaomi Smart Fan
+- **xiaomi.fan.p85** - Smart Standing Fan Pro Slim
 
 ### Dmaker Fans
 - **dmaker.fan.1c** - Mi Smart Standing Fan 1C
