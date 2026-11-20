@@ -1,6 +1,6 @@
 # SmartMiFanAsync - Externe Abhängigkeiten
 
-**Version**: 1.8.2  
+**Version**: 2.0.0  
 **Zielplattform**: ESP32 (Arduino Core)  
 **Letzte Aktualisierung**: 2026-01-16
 

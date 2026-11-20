@@ -1,6 +1,6 @@
 # SmartMiFanAsync Documentation Index
 
-**Version**: 2.0.0
+**Version**: 2.0.1
 **Platform**: ESP32 (Arduino Core)
 **Last Updated**: 2026-10-31
 
